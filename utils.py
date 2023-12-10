@@ -8,17 +8,12 @@ def catch_changes(portfolio_before, portfolio_after):
     
     return list(wallet_merged - wallet_before)
 
-def get_prices(stocks, timestamp, dataframes):
+def get_prices(portfolio, stocks):
     
     prices = []
     
     for stock in stocks:
-        
-        stock_df = dataframes[stock]
-        
-        stock_df['delta'] = abs(pd.to_datetime(stock_df.date) - timestamp)
-        price = stock_df.sort_values('delta').iloc[0].close.tolist()
-        prices.append(price)
+        prices.append(portfolio.get_stock_price(stock))
         
     return prices
 
@@ -35,8 +30,8 @@ def get_actions(positions_normal, dataframes):
         purchased_stocks = catch_changes(portfolio, next_portfolio)
         sold_stocks = catch_changes(next_portfolio, portfolio)
 
-        purchased_prices = get_prices(purchased_stocks, timestamp, dataframes)
-        sold_prices = get_prices(sold_stocks, timestamp, dataframes)
+        purchased_prices = get_prices(next_portfolio, purchased_stocks)
+        sold_prices = get_prices(next_portfolio, sold_stocks)
 
         purchased_stocks = [{'ticker': stock, 'price': price} for stock, price in zip(purchased_stocks, purchased_prices)]
         sold_stocks = [{'ticker': stock, 'price': price} for stock, price in zip(sold_stocks, sold_prices)]
