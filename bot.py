@@ -64,10 +64,10 @@ class MarketBot:
          'module_path': 'qlib.data.dataset',
          'kwargs': {'handler': {'class': 'Alpha360',
            'module_path': 'qlib.contrib.data.handler',
-           'kwargs': {'start_time': a,
-            'end_time': b,
-                      'fit_start_time': a,
-                      'fit_end_time': b,
+           'kwargs': {'start_time': start_date,
+            'end_time': end_date,
+                      'fit_start_time': start_date,
+                      'fit_end_time': end_date,
             'instruments': 'all',
             'infer_processors': [{'class': 'RobustZScoreNorm',
               'kwargs': {'fields_group': 'feature', 'clip_outlier': True}},
@@ -75,7 +75,7 @@ class MarketBot:
             'learn_processors': [{'class': 'DropnaLabel'},
              {'class': 'CSRankNorm', 'kwargs': {'fields_group': 'label'}}],
             'label': ['Ref($close, -2) / Ref($close, -1) - 1']}},
-          'segments': {'test': (a, b)}}}
+          'segments': {'test': (start_date, end_date)}}}
 
         self.config['executor_config'] = {
             "class": "SimulatorExecutor",
@@ -116,3 +116,4 @@ class MarketBot:
         df.iloc[-k:, 0] = pd.to_datetime(df.iloc[-2 * k: -k, 0] + timedelta(days=1))
         
         return df
+    
