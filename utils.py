@@ -31,7 +31,7 @@ def get_actions(positions_normal, dataframes):
         sold_stocks = catch_changes(next_portfolio, portfolio)
 
         purchased_prices = get_prices(next_portfolio, purchased_stocks)
-        sold_prices = get_prices(next_portfolio, sold_stocks)
+        sold_prices = get_prices(portfolio, sold_stocks)
 
         purchased_stocks = [{'ticker': stock, 'price': price} for stock, price in zip(purchased_stocks, purchased_prices)]
         sold_stocks = [{'ticker': stock, 'price': price} for stock, price in zip(sold_stocks, sold_prices)]
