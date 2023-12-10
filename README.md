@@ -8,7 +8,9 @@
 
 ```MarketBot``` - основной объект
 
-Пример работы:
+[Model Training](model_training.ipynb) - пример тренировки модели для бота
+
+Пример работы c ботом:
 ```
 bot = MarketBot('/kaggle/working/hours', '/kaggle/working/moex_data_hours')
 bot.load_model('/kaggle/input/qlib-model-saving/trained_model')
@@ -18,4 +20,5 @@ actions = get_actions(output, datasets)
 ```
 
 ```output``` - объект из библиотеки **Qlib**
-```actions``` - уже готовый для дальнешего использования объект
+
+```actions``` - готовый для дальнешего использования объект
