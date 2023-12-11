@@ -13,7 +13,7 @@
 Пример работы c ботом:
 ```
 bot = MarketBot('./hours', './moex_data_hours', 100000)
-bot.load_model('./trained_model')
+bot.load_model('./alstm_model')
 
 output = bot.get_states(datasets)
 actions = get_actions(output, datasets)
