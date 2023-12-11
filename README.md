@@ -12,8 +12,8 @@
 
 Пример работы c ботом:
 ```
-bot = MarketBot('/kaggle/working/hours', '/kaggle/working/moex_data_hours')
-bot.load_model('/kaggle/input/qlib-model-saving/trained_model')
+bot = MarketBot('./hours', './moex_data_hours', 100000)
+bot.load_model('./trained_model')
 
 output = bot.get_states(datasets)
 actions = get_actions(output, datasets)

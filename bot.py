@@ -14,11 +14,13 @@ from typing import Dict
 
 class MarketBot:
     
-    def __init__(self, path_to_csvs: str, path_to_bins: str):
+    def __init__(self, path_to_csvs: str, path_to_bins: str, start_account: int, save: int = 1, drop: int = 1):
         
         self.config = {}
         self.model = None
-        self.start_account = 100000
+        self.save = save
+        self.drop = drop
+        self.start_account = start_account
         self.path_to_bins = path_to_bins
         self.path_to_csvs = path_to_csvs
         qlib.init(provider_uri=path_to_bins)
@@ -29,23 +31,23 @@ class MarketBot:
         
     def get_states(self, dataframes: Dict, k=15):
         
-        t = self.aggregate_dataframe(list(dataframes.values())[0], k=k)['date'].sort_values().astype(str).values
+        t = self._aggregate_dataframe(list(dataframes.values())[0], k=k)['date'].sort_values().astype(str).values
         end_date, start_date = t[-k - 1], t[0]
         
         for ticker in dataframes:
-            self.aggregate_dataframe(dataframes[ticker], k=k).to_csv(f'{self.path_to_csvs}/{ticker}.csv', index=False)
+            self._aggregate_dataframe(dataframes[ticker], k=k).to_csv(f'{self.path_to_csvs}/{ticker}.csv', index=False)
         
         command = f'python qlib/scripts/dump_bin.py dump_all --csv_path {self.path_to_csvs} --qlib_dir {self.path_to_bins}'
         ret = os.system(command)
 
         if ret != 0:
-            raise ValueError('???')
+            raise ValueError('Something went wrong in saved dataframes')
         
-        self.generate_config(start_date, end_date)
-        dataset = init_instance_by_config(task['dataset'])
+        self._generate_config(start_date, end_date)
+        dataset = init_instance_by_config(self.config['dataset'])
         predictions = self.model.predict(dataset)
         
-        strategy_obj = TopkDropoutStrategy(**self.generate_strategy(predictions))
+        strategy_obj = TopkDropoutStrategy(**self._generate_strategy(predictions))
         executor_obj = init_instance_by_config(self.config['executor_config'])
 
         portfolio_metric_dict, indicator_dict = backtest(
@@ -58,24 +60,55 @@ class MarketBot:
         
         return positions_normal
         
-    def generate_config(self, start_date, end_date):
+    def _generate_config(self, start_date, end_date):
         
-        self.config['dataset'] = {'class': 'DatasetH',
-         'module_path': 'qlib.data.dataset',
-         'kwargs': {'handler': {'class': 'Alpha360',
-           'module_path': 'qlib.contrib.data.handler',
-           'kwargs': {'start_time': start_date,
-            'end_time': end_date,
-                      'fit_start_time': start_date,
-                      'fit_end_time': end_date,
-            'instruments': 'all',
-            'infer_processors': [{'class': 'RobustZScoreNorm',
-              'kwargs': {'fields_group': 'feature', 'clip_outlier': True}},
-             {'class': 'Fillna', 'kwargs': {'fields_group': 'feature'}}],
-            'learn_processors': [{'class': 'DropnaLabel'},
-             {'class': 'CSRankNorm', 'kwargs': {'fields_group': 'label'}}],
-            'label': ['Ref($close, -2) / Ref($close, -1) - 1']}},
-          'segments': {'test': (start_date, end_date)}}}
+        self.config['dataset'] = {
+            'class': 'DatasetH',
+            'module_path': 'qlib.data.dataset',
+            'kwargs': {
+                'handler': {
+                    'class': 'Alpha360',
+                    'module_path': 'qlib.contrib.data.handler',
+                    'kwargs': {
+                        'start_time': start_date,
+                        'end_time': end_date,
+                        'fit_start_time': start_date,
+                        'fit_end_time': end_date,
+                        'instruments': 'all',
+                        'infer_processors': [
+                            {
+                                'class': 'RobustZScoreNorm',
+                                'kwargs': {
+                                    'fields_group': 'feature',
+                                    'clip_outlier': True
+                                }
+                            },
+                            {
+                                'class': 'Fillna',
+                                'kwargs': {
+                                    'fields_group': 'feature'
+                                }
+                            }
+                        ],
+                        'learn_processors': [
+                            {
+                                'class': 'DropnaLabel'
+                            },
+                            {
+                                'class': 'CSRankNorm',
+                                'kwargs':{
+                                    'fields_group': 'label'
+                                }
+                            }
+                        ],
+                        'label': ['Ref($close, -2) / Ref($close, -1) - 1']
+                    }
+                },
+                'segments': {
+                    'test': (start_date, end_date)
+                }
+            }
+        }
 
         self.config['executor_config'] = {
             "class": "SimulatorExecutor",
@@ -102,15 +135,15 @@ class MarketBot:
             }
         }
         
-    def generate_strategy(self, predicted):
+    def _generate_strategy(self, predicted):
         
         return {
-            "topk": 8,
-            "n_drop": 2,
+            "topk": self.save,
+            "n_drop": self.drop,
             "signal": predicted
         }
     
-    def aggregate_dataframe(self, dataframe, k):
+    def _aggregate_dataframe(self, dataframe, k):
         
         df = pd.concat((dataframe, dataframe.iloc[-k:]))
         df.iloc[-k:, 0] = pd.to_datetime(df.iloc[-2 * k: -k, 0] + timedelta(days=1))
